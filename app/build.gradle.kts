@@ -81,4 +81,14 @@ dependencies {
     // Chucker
     debugImplementation(libs.chucker.library)
     releaseImplementation(libs.chucker.library.no.op)
+
+    // Media3 ExoPlayer
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.common)
+    implementation(libs.androidx.media3.datasource.okhttp)
+
+    // Coil
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
 }
