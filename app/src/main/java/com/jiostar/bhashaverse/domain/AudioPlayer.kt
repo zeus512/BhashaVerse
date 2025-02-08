@@ -19,63 +19,17 @@ import javax.net.ssl.SSLSocketFactory
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
-class AudioPlayer(private val context: Context, private val okMediaHttpClient: OkHttpClient) {
+class AudioPlayer(context: Context, okMediaHttpClient: OkHttpClient) {
 
 
-    private val dataSourceFactory: DataSource.Factory
-    val player: ExoPlayer
+    // Create a custom TrustManager
+    private val dataSourceFactory: DataSource.Factory = OkHttpDataSource.Factory(okMediaHttpClient)
+    val player: ExoPlayer = ExoPlayer.Builder(context).build()
     private var isPrepared = false
 
-    init {
-        // Create a custom TrustManager
-        //val trustManager = createTrustManager()
-
-        // Create an SSLSocketFactory using the custom TrustManager
-        //val sslSocketFactory = createSSLSocketFactory(trustManager)
-
-        // Create an OkHttpClient with the custom SSLSocketFactory
-//        okHttpClient = OkHttpClient.Builder()
-//            .sslSocketFactory(sslSocketFactory, trustManager)
-//            .hostnameVerifier { _, _ -> true } // Trust all hostnames (use with caution!)
-//            .build()
-
-        dataSourceFactory = OkHttpDataSource.Factory(okMediaHttpClient)
-        player = ExoPlayer.Builder(context).build()
-    }
-
-    private fun createTrustManager(): X509TrustManager {
-        return object : X509TrustManager {
-            @Throws(CertificateException::class)
-            override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {
-                // Accept all client certificates (use with caution!)
-            }
-
-            @Throws(CertificateException::class)
-            override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {
-                // Accept all server certificates (use with caution!)
-            }
-
-            override fun getAcceptedIssuers(): Array<X509Certificate> {
-                return arrayOf()
-            }
-        }
-    }
-
-    private fun createSSLSocketFactory(trustManager: X509TrustManager): SSLSocketFactory {
-        return try {
-            val sslContext = SSLContext.getInstance("TLS")
-            sslContext.init(null, arrayOf<TrustManager>(trustManager), null)
-            sslContext.socketFactory
-        } catch (e: NoSuchAlgorithmException) {
-            throw RuntimeException("Failed to create SSLSocketFactory", e)
-        } catch (e: KeyManagementException) {
-            throw RuntimeException("Failed to create SSLSocketFactory", e)
-        }
-    }
-
     @OptIn(UnstableApi::class)
-    fun play(url: String, startPosition: Long = 0L) {
-        if (!isPrepared) {
+    fun play(url: String, startPosition: Long = 0L, updateMediaItem: Boolean = false) {
+        if (!isPrepared || updateMediaItem) {
             val mediaItem = createMediaItem(url)
             val mediaSource = createMediaSource(mediaItem)
             player.setMediaSource(mediaSource)

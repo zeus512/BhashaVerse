@@ -24,10 +24,15 @@ class AudioPlayerViewModel @Inject constructor(
     private val _currentPosition = MutableStateFlow(0f)
     val currentPosition: StateFlow<Float> = _currentPosition
 
+    private var currentPlayingUrl: String? = null
     fun play(url: String) {
         viewModelScope.launch {
+            if (currentPlayingUrl != url) {
+                audioPlayer.stop()
+                currentPlayingUrl = url
+            }
             val currentPlaybackPosition = audioPlayerState.value.playbackPosition
-            audioPlayer.play(url, currentPlaybackPosition)
+            audioPlayer.play(url, currentPlaybackPosition, updateMediaItem = currentPlayingUrl != url)
             val duration = audioPlayer.player.duration
             _audioPlayerState.update {
                 it.copy(

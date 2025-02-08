@@ -26,6 +26,7 @@ import java.security.KeyManagementException
 import java.security.NoSuchAlgorithmException
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocketFactory
@@ -53,6 +54,8 @@ object NetworkModule {
     ): OkHttpClient {
 
         return OkHttpClient.Builder()
+            .readTimeout(90, TimeUnit.SECONDS) // Set read timeout to 90 seconds
+            .connectTimeout(90, TimeUnit.SECONDS)
             .addInterceptor(loggingInterceptor)
             .addInterceptor(chuckerInterceptor)
             .build()

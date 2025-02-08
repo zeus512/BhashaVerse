@@ -56,7 +56,6 @@ fun AudioPlayerUI(
             contentAlignment = Alignment.Center
         ) {
 
-            Log.d("AudioPlayerUI", "Thumbnail URL: $thumbnailUrl")
             val imageLoader = LocalImageLoader.current
             AsyncImage(
                 model = thumbnailUrl(),
