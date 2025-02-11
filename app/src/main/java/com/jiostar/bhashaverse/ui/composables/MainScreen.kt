@@ -29,6 +29,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.jiostar.bhashaverse.data.models.LyricLine
 import com.jiostar.bhashaverse.ui.viewmodels.AudioPlayerViewModel
 import com.jiostar.bhashaverse.ui.viewmodels.MainActivityViewModel
+import com.jiostar.bhashaverse.ui.viewmodels.MainWithManifestActivityViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -118,12 +119,17 @@ fun MainScreen(
                 println("Selected language code: $languageCode")
             }, onSendClicked = {
                 if (userPickedLanguageCode.isNotEmpty()) {
-                    viewModel.transcribeTextToUserGeneratedLanguage(
+                    viewModel.translateText(
                         listOf(
                             userPickedLanguageCode
                         )
                     )
-                    //viewModel.translateText(userPickedLanguageCode)
+//                    viewModel.transcribeTextToUserGeneratedLanguage(
+//                        listOf(
+//                            userPickedLanguageCode
+//                        )
+//                    )
+
                 }
                 // Handle the send button click
                 println("Send button clicked")

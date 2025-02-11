@@ -6,8 +6,10 @@ import com.jiostar.bhashaverse.data.di.MediaOkHttpClient
 import com.jiostar.bhashaverse.domain.AppRepository
 import com.jiostar.bhashaverse.domain.AudioPlayer
 import com.jiostar.bhashaverse.domain.usecase.ExtractEventsUseCase
+import com.jiostar.bhashaverse.domain.usecase.GetManifestUseCase
 import com.jiostar.bhashaverse.domain.usecase.ProcessAudioUseCase
 import com.jiostar.bhashaverse.domain.usecase.ProcessTextUseCase
+import com.jiostar.bhashaverse.domain.usecase.StartAudioProcessing
 import com.jiostar.bhashaverse.domain.usecase.TranscribeAudioUseCase
 import com.jiostar.bhashaverse.domain.usecase.TranslateTextUseCase
 import com.jiostar.bhashaverse.domain.usecase.TtsAudioUseCase
@@ -81,5 +83,19 @@ object DomainModule {
     fun provideTtsAudioUseCase(appRepository: AppRepository): TtsAudioUseCase {
         return TtsAudioUseCase(appRepository)
     }
+
+    @Provides
+    @Singleton
+    fun provideManifestUseCase(appRepository: AppRepository): GetManifestUseCase {
+        return GetManifestUseCase(appRepository)
+    }
+
+
+    @Provides
+    @Singleton
+    fun provideAudioProcessingUseCase(appRepository: AppRepository): StartAudioProcessing {
+        return StartAudioProcessing(appRepository)
+    }
+
 
 }

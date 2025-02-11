@@ -1,15 +1,16 @@
 package com.jiostar.bhashaverse.domain.usecase
 
+import com.jiostar.bhashaverse.data.models.AudioManifestResponse
 import com.jiostar.bhashaverse.data.models.ExtractEventsRequest
 import com.jiostar.bhashaverse.data.models.ExtractEventsResponse
 import com.jiostar.bhashaverse.data.models.ProcessAudioRequest
 import com.jiostar.bhashaverse.data.models.ProcessAudioResponse
 import com.jiostar.bhashaverse.data.models.ProcessTextRequest
 import com.jiostar.bhashaverse.data.models.ProcessTextResponse
-import com.jiostar.bhashaverse.data.models.TranslateRequest
-import com.jiostar.bhashaverse.data.models.TranslateResponse
 import com.jiostar.bhashaverse.data.models.TranscribeRequest
 import com.jiostar.bhashaverse.data.models.TranscribeResponse
+import com.jiostar.bhashaverse.data.models.TranslateRequest
+import com.jiostar.bhashaverse.data.models.TranslateResponse
 import com.jiostar.bhashaverse.data.models.TtsAudioRequest
 import com.jiostar.bhashaverse.data.models.TtsAudioResponse
 import com.jiostar.bhashaverse.domain.AppRepository
@@ -56,4 +57,18 @@ class TtsAudioUseCase(private val repository: AppRepository) :
     UseCase<TtsAudioRequest, TtsAudioResponse> {
     override suspend operator fun invoke(params: TtsAudioRequest): Result<TtsAudioResponse> =
         repository.ttsTelugu(params).toResult()
+}
+
+// GET Manifest Usecase
+class GetManifestUseCase(private val repository: AppRepository) :
+    UseCase<String, AudioManifestResponse> {
+    override suspend operator fun invoke(params: String): Result<AudioManifestResponse> =
+        repository.getManifestForStream(params).toResult()
+}
+
+// Start Audio Processing
+class StartAudioProcessing(private val repository: AppRepository) :
+    UseCase<String, Unit> {
+    override suspend operator fun invoke(params: String): Result<Unit> =
+        repository.startAudioProcessing(params).toResult()
 }

@@ -2,6 +2,7 @@ package com.jiostar.bhashaverse.domain
 
 
 import com.jiostar.bhashaverse.data.ApiService
+import com.jiostar.bhashaverse.data.models.AudioManifestResponse
 import com.jiostar.bhashaverse.data.models.ExtractEventsRequest
 import com.jiostar.bhashaverse.data.models.ExtractEventsResponse
 import com.jiostar.bhashaverse.data.models.ProcessAudioRequest
@@ -40,5 +41,12 @@ class AppRepository(private val apiService: ApiService) {
 
     suspend fun ttsTelugu(request: TtsAudioRequest): Response<TtsAudioResponse> {
         return apiService.ttsTelugu(request)
+    }
+    suspend fun getManifestForStream(audioId: String): Response<AudioManifestResponse> {
+        return apiService.getManifest(audioId)
+    }
+
+    suspend fun startAudioProcessing(audioId: String): Response<Unit> {
+        return apiService.startProcessing(audioId)
     }
 }

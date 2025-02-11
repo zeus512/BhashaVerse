@@ -1,5 +1,6 @@
 package com.jiostar.bhashaverse.data
 
+import com.jiostar.bhashaverse.data.models.AudioManifestResponse
 import com.jiostar.bhashaverse.data.models.ExtractEventsRequest
 import com.jiostar.bhashaverse.data.models.ExtractEventsResponse
 import com.jiostar.bhashaverse.data.models.ProcessAudioRequest
@@ -17,6 +18,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 
 interface ApiService {
     @GET("/users")
@@ -39,6 +41,14 @@ interface ApiService {
 
     @POST("/tts")
     suspend fun ttsTelugu(@Body request: TtsAudioRequest): Response<TtsAudioResponse>
+
+    @GET("/manifest/{audio_id}")
+    suspend fun getManifest(@Path("audio_id") audioId: String): Response<AudioManifestResponse>
+
+    @POST("/process_audio/{audio_id}")
+    suspend fun startProcessing(@Path("audio_id") audioId: String): Response<Unit> // Or Response<ResponseBody> if you expect a response body
+
+
 }
 
 data class Dummy(val dummy: String)

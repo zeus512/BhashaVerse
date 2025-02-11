@@ -109,3 +109,13 @@ data class TtsAudioRequest(
 data class TtsAudioResponse(
     @Json(name = "audio_url") val audioUrl: String
 )
+
+@JsonClass(generateAdapter = true)
+data class AudioChunk(
+    @Json(name = "translated_audio_url")  val translatedAudioUrl: String? = null,
+    @Json(name = "error")  val error: String? = null
+)
+@JsonClass(generateAdapter = true)
+data class AudioManifestResponse(
+    @Json(name = "audio_chunks") val audioChunks: List<AudioChunk>
+)

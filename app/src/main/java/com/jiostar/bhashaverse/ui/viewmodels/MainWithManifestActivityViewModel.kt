@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class MainActivityViewModel @Inject constructor(
+class MainWithManifestActivityViewModel @Inject constructor(
     private val processAudioUseCase: ProcessAudioUseCase,
     private val processTextUseCase: ProcessTextUseCase,
     private val translateTextUseCase: TranslateTextUseCase,
@@ -42,7 +42,7 @@ class MainActivityViewModel @Inject constructor(
 
     init {
         //fetchBasicData()
-        transcribeAudio()
+        //transcribeAudio()
     }
 
     private fun transcribeAudio() {
