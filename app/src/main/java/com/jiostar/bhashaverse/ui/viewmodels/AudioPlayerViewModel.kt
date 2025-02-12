@@ -8,6 +8,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import com.jiostar.bhashaverse.data.di.DefaultOkHttpClient
 import com.jiostar.bhashaverse.data.models.AudioChunk
+import com.jiostar.bhashaverse.data.models.AudioChunkState
 import com.jiostar.bhashaverse.data.models.AudioManifestResponse
 import com.jiostar.bhashaverse.data.models.ChunkUpdate
 import com.jiostar.bhashaverse.domain.AudioPlayer
@@ -145,16 +146,32 @@ class AudioPlayerViewModel @Inject constructor(
         }
     }
 
+    private fun updateAudioChunk(chunk: AudioChunk, index: Int) {
+        _audioManifest.update { currentManifest ->
+            currentManifest?.copy(
+                audioChunks = currentManifest.audioChunks.toMutableList()
+                    .apply {
+                        set(
+                            index,
+                            chunk
+                        )
+                    }
+            )
+        }
+    }
+
 
     private fun playNextChunk() {
         if (isPlaying) return // Prevent concurrent calls
         isPlaying = true // Set the flag
+        if (audioManifest.value?.audioChunks?.any { it.isPlaying == AudioChunkState.PLAYING } == true) return // Prevent null pointer exception
+
         viewModelScope.launch {
             println("inside next chunk function")
             val manifest = audioManifest.value ?: return@launch
 
             val nextChunkIndex = manifest.audioChunks.indexOfFirst {
-                it.translatedAudioUrl != null && !it.isPlaying && it.error == null
+                it.translatedAudioUrl != null && it.isPlaying != AudioChunkState.PLAYED && it.error == null
             }
 
             println("next chunk index: $nextChunkIndex")
@@ -169,7 +186,7 @@ class AudioPlayerViewModel @Inject constructor(
             println("Playing audio - ${chunk.translatedAudioUrl}")
 
             if (chunk.translatedAudioUrl != null) {
-                chunk.isPlaying = true
+                updateAudioChunk(chunk.copy(isPlaying = AudioChunkState.PLAYING), nextChunkIndex)
 
                 chunk.translatedAudioUrl.let { audioPlayer.play("${Constants.BASE_URL}$it", updateMediaItem = true) }
 
@@ -181,14 +198,14 @@ class AudioPlayerViewModel @Inject constructor(
                 audioPlayer.player.addListener(object : Player.Listener {
                     override fun onPlaybackStateChanged(state: Int) {
                         if (state == Player.STATE_ENDED) {
-                            chunk.isPlaying = false
+                            updateAudioChunk(chunk.copy(isPlaying = AudioChunkState.PLAYED), nextChunkIndex)
                             isPlaying = false
                             playNextChunk()
                         }
                     }
 
                     override fun onPlayerError(error: PlaybackException) {
-                        chunk.isPlaying = false
+                        updateAudioChunk(chunk.copy(isPlaying = AudioChunkState.AVAILABLE), nextChunkIndex)
                         isPlaying = false
                         _audioPlayerState.update { it.copy(isBuffering = false, isPlaying = false) } // Update error message in state
                         Log.e("Exoplayer Error", error.toString())

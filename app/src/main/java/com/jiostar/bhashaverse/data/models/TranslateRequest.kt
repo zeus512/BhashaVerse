@@ -114,9 +114,15 @@ data class TtsAudioResponse(
 data class AudioChunk(
     @Json(name = "translated_audio_url")  val translatedAudioUrl: String? = null,
     @Json(name = "error")  val error: String? = null,
-    var isPlaying: Boolean = false,
+    val isPlaying: AudioChunkState = AudioChunkState.AVAILABLE,
 )
 @JsonClass(generateAdapter = true)
 data class AudioManifestResponse(
     @Json(name = "audio_chunks") val audioChunks: List<AudioChunk>
 )
+
+enum class AudioChunkState {
+    PLAYING,
+    AVAILABLE,
+    PLAYED
+}
