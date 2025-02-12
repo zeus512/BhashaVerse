@@ -88,8 +88,9 @@ fun AudioPlayerUI(
                     .size(64.dp)
                     .background(Color.Black.copy(alpha = 0.5f)) // Semi-transparent background
             ) {
+
                 Icon(
-                    imageVector = if (isPlaying()) Icons.Filled.MoreVert else Icons.Filled.PlayArrow,
+                    imageVector = if (isPlaying()) PauseBtn else Icons.Filled.PlayArrow,
                     contentDescription = if (isPlaying()) "Pause" else "Play",
                     tint = Color.White,
                     modifier = Modifier.size(48.dp)

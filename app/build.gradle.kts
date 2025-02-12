@@ -93,4 +93,6 @@ dependencies {
     implementation(libs.coil.network.okhttp)
     //Event source
     implementation(libs.okhttp.sse)
+    //splash screen
+    implementation(libs.androidx.core.splashscreen)
 }
