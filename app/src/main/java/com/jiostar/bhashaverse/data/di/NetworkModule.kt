@@ -54,7 +54,7 @@ object NetworkModule {
     ): OkHttpClient {
 
         return OkHttpClient.Builder()
-            .readTimeout(90, TimeUnit.SECONDS) // Set read timeout to 90 seconds
+            .readTimeout(0, TimeUnit.SECONDS) // Set read timeout to 90 seconds
             .connectTimeout(90, TimeUnit.SECONDS)
             .addInterceptor(loggingInterceptor)
             .addInterceptor(chuckerInterceptor)

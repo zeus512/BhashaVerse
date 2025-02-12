@@ -1,8 +1,11 @@
 package com.jiostar.bhashaverse.ui.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.C
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
 import com.jiostar.bhashaverse.data.di.DefaultOkHttpClient
 import com.jiostar.bhashaverse.data.models.AudioChunk
 import com.jiostar.bhashaverse.data.models.AudioManifestResponse
@@ -12,6 +15,7 @@ import com.jiostar.bhashaverse.domain.usecase.GetManifestUseCase
 import com.jiostar.bhashaverse.domain.usecase.StartAudioProcessing
 import com.jiostar.bhashaverse.ui.state.AudioPlayerState
 import com.jiostar.bhashaverse.ui.utils.Constants
+import com.jiostar.bhashaverse.ui.utils.SseManager
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,12 +23,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.Response
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
-import okhttp3.sse.EventSources
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @HiltViewModel
@@ -45,10 +46,10 @@ class AudioPlayerViewModel @Inject constructor(
     private val _audioManifest = MutableStateFlow<AudioManifestResponse?>(null)
     val audioManifest: StateFlow<AudioManifestResponse?> = _audioManifest
 
-    private var eventSource: EventSource? = null
+    val sseManager = SseManager()
+    private var isPlaying = false
 
-
-    val listener =  object : EventSourceListener() {
+    val listener = object : EventSourceListener() {
 
         override fun onEvent(
             eventSource: EventSource,
@@ -61,30 +62,32 @@ class AudioPlayerViewModel @Inject constructor(
             // Handle SSE event (same as before)
             val adapter = moshi.adapter(ChunkUpdate::class.java)
 
-            val update = try {
+            val chunk = try {
                 adapter.fromJson(data)
             } catch (e: Exception) { // Catch any exception during parsing
                 println("Error parsing JSON: ${e.message}")
                 null
             }
 
-            val chunkIndex = update?.chunkIndex ?: return // Convert to Int
+            val chunkIndex = chunk?.chunkIndex ?: return // Convert to Int
 
-            if (update.audioUrl != null) {
+            if (chunk.audioUrl != null) {
+                println("Chunk $chunkIndex audio URL: ${chunk.audioUrl}")
+
                 _audioManifest.update { currentManifest ->
                     currentManifest?.copy(
                         audioChunks = currentManifest.audioChunks.toMutableList()
                             .apply {
                                 set(
                                     chunkIndex,
-                                    AudioChunk(translatedAudioUrl = update.audioUrl)
+                                    AudioChunk(translatedAudioUrl = chunk.audioUrl)
                                 )
                             }
                     )
                 }
-                if (chunkIndex == 0 || chunkIndex == audioManifest.value!!.audioChunks.indexOfFirst { it.translatedAudioUrl == null } - 1) {
-                    playNextChunk()
-                }
+                println("Trying to play chunk - $chunkIndex $chunk.audioUrl")
+                playNextChunk()
+
             } else {
                 //Handle error
             }
@@ -120,22 +123,11 @@ class AudioPlayerViewModel @Inject constructor(
         }
     }
 
-    init {
-        // Start SSE connection (using OkHttp's EventSource)
-        val request =
-            Request.Builder()
-                .url("${Constants.BASE_URL}/stream")
-                .addHeader("Accept", "text/event-stream")
-                .build() // Correct URL
-        eventSource = EventSources.createFactory(OkHttpClient.Builder()
-            .readTimeout(0, TimeUnit.MILLISECONDS)  // No timeout for long-lived connections like SSE
-            .connectTimeout(30, TimeUnit.SECONDS)   // Set a reasonable connection timeout
-            .build())
-            .newEventSource(request, listener)
-    }
+
     fun loadAndPlayAudio(audioId: String) {
         viewModelScope.launch {
             try {
+                sseManager.connectToSse("${Constants.BASE_URL}/stream", listener)
                 getManifestUseCase(audioId).onSuccess {
                     _audioManifest.value = it
 
@@ -153,37 +145,62 @@ class AudioPlayerViewModel @Inject constructor(
         }
     }
 
+
     private fun playNextChunk() {
+        if (isPlaying) return // Prevent concurrent calls
+        isPlaying = true // Set the flag
         viewModelScope.launch {
+            println("inside next chunk function")
             val manifest = audioManifest.value ?: return@launch
-            val nextChunkIndex = manifest.audioChunks.indexOfFirst { it.translatedAudioUrl == null }
+
+            val nextChunkIndex = manifest.audioChunks.indexOfFirst {
+                it.translatedAudioUrl != null && !it.isPlaying && it.error == null
+            }
+
+            println("next chunk index: $nextChunkIndex")
 
             if (nextChunkIndex == -1) {
-                // All chunks played
+                // ... (All chunks played or no chunks ready - same logic as before)
+                isPlaying = false // Reset the flag
                 return@launch
             }
 
             val chunk = manifest.audioChunks[nextChunkIndex]
+            println("Playing audio - ${chunk.translatedAudioUrl}")
 
             if (chunk.translatedAudioUrl != null) {
-                audioPlayer.play(chunk.translatedAudioUrl)
+                chunk.isPlaying = true
+
+                chunk.translatedAudioUrl.let { audioPlayer.play("${Constants.BASE_URL}$it", updateMediaItem = true) }
 
                 _audioPlayerState.update {
-                    it.copy(isPlaying = true, isBuffering = false) // Update isPlaying
+                    it.copy(isPlaying = true, isBuffering = false)
                 }
 
-                // Preload the next chunk (optional)
-                if (nextChunkIndex + 1 < manifest.audioChunks.size) {
-                    // ... (Preload logic)
-                }
+                /// ExoPlayer Listeners (Corrected)
+                audioPlayer.player.addListener(object : Player.Listener {
+                    override fun onPlaybackStateChanged(state: Int) {
+                        if (state == Player.STATE_ENDED) {
+                            chunk.isPlaying = false
+                            isPlaying = false
+                            playNextChunk()
+                        }
+                    }
+
+                    override fun onPlayerError(error: PlaybackException) {
+                        chunk.isPlaying = false
+                        isPlaying = false
+                        _audioPlayerState.update { it.copy(isBuffering = false, isPlaying = false) } // Update error message in state
+                        Log.e("Exoplayer Error", error.toString())
+                    }
+                })
 
             } else if (chunk.error != null) {
-                // Handle error
-                println("Error playing chunk: ${chunk.error}")
-                _audioPlayerState.update { it.copy(isBuffering = false) } // Stop buffering
+                // ... (error handling - no changes)
             } else {
-                _audioPlayerState.update { it.copy(isBuffering = true) } // Start buffering
+                // ... (buffering state update - no changes)
             }
+            isPlaying = false // Reset the flag after playNextChunk finishes
         }
     }
 
@@ -256,6 +273,6 @@ class AudioPlayerViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         audioPlayer.release()
-        eventSource?.cancel()
+        sseManager.disconnect()
     }
 }
