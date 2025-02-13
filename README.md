@@ -1,3 +1,5 @@
+# Android App Code 
+
 # AI-Powered Multilingual Commentary Platform
 
 This project aims to revolutionize sports and event broadcasting by leveraging AI to provide automated, multilingual commentary. This enhances accessibility, affordability, and engagement for regional fans worldwide. The project is currently in the Proof of Concept (POC) stage, focusing on core functionalities and demonstrating the feasibility of the concept.
